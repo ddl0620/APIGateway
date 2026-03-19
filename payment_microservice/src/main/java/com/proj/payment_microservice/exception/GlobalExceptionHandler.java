@@ -17,6 +17,12 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(404, ex.getMessage(), null));
     }
 
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIdempotencyConflict(IdempotencyConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiResponse<>(409, ex.getMessage(), null));
+    }
+
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ApiResponse<Void>> handleInsufficientBalance(InsufficientBalanceException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

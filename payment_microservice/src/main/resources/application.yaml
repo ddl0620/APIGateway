@@ -34,11 +34,6 @@ payment:
     charge-path: /api/v1/charges
     refund-path: /api/v1/refunds
 
-wiremock:
-  server:
-    port: 9090
-    enabled: ${WIREMOCK_ENABLED:true}
-
 resilience4j:
   circuitbreaker:
     instances:

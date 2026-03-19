@@ -42,6 +42,8 @@ public class Payment {
 
     private String gatewayResponse;
 
+    private String requestHash;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

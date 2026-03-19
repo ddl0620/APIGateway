@@ -7,6 +7,7 @@ import com.proj.payment_microservice.domain.model.*;
 import com.proj.payment_microservice.domain.repository.AccountRepository;
 import com.proj.payment_microservice.domain.repository.LedgerEntryRepository;
 import com.proj.payment_microservice.domain.repository.PaymentRepository;
+import com.proj.payment_microservice.exception.IdempotencyConflictException;
 import com.proj.payment_microservice.exception.InsufficientBalanceException;
 import com.proj.payment_microservice.exception.PaymentProcessingException;
 import com.proj.payment_microservice.exception.ResourceNotFoundException;
@@ -19,7 +20,11 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Optional;
 
 @Slf4j
@@ -39,11 +44,19 @@ public class ProcessPaymentUseCase {
         log.info("Processing payment for user {} amount {} {} idempotencyKey={}",
                 userId, request.getAmount(), request.getCurrency(), maskIdempotencyKey(request.getIdempotencyKey()));
 
-        // 1. Idempotency check scoped per user
+        // 1. Idempotency check scoped per user — with payload fingerprint comparison
+        String requestHash = computeRequestHash(request);
         Optional<Payment> existing = paymentRepository.findByUserIdAndIdempotencyKey(userId, request.getIdempotencyKey());
         if (existing.isPresent()) {
-            log.info("Idempotent request detected, returning existing payment id={}", existing.get().getId());
-            return toResponse(existing.get());
+            Payment existingPayment = existing.get();
+            if (!requestHash.equals(existingPayment.getRequestHash())) {
+                auditService.log(userId, "IDEMPOTENCY_CONFLICT", "PAYMENT", existingPayment.getId(),
+                        "Idempotency key reused with different payload", false);
+                throw new IdempotencyConflictException(
+                        "Idempotency key already used with a different request payload");
+            }
+            log.info("Idempotent request detected, returning existing payment id={}", existingPayment.getId());
+            return toResponse(existingPayment);
         }
 
         // 2. Get or create account for user
@@ -70,6 +83,7 @@ public class ProcessPaymentUseCase {
                 .currency(currency)
                 .status(PaymentStatus.PENDING)
                 .description(request.getDescription())
+                .requestHash(requestHash)
                 .build();
         try {
             payment = paymentRepository.save(payment);
@@ -186,6 +200,19 @@ public class ProcessPaymentUseCase {
                 .description("Compensation credit for failed payment")
                 .build();
         ledgerEntryRepository.save(entry);
+    }
+
+    private String computeRequestHash(ProcessPaymentRequest request) {
+        String canonical = "amount=" + request.getAmount().toPlainString()
+                + "&currency=" + request.getCurrency().toUpperCase()
+                + "&description=" + (request.getDescription() != null ? request.getDescription() : "");
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 
     private String maskIdempotencyKey(String key) {

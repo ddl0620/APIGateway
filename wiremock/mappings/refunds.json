@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/v1/refunds"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"refundId\": \"ref_{{randomValue type='UUID'}}\", \"status\": \"REFUNDED\", \"message\": \"Refund processed successfully\"}",
+    "transformers": ["response-template"],
+    "fixedDelayMilliseconds": 2000
+  }
+}

@@ -33,6 +33,24 @@ services:
       retries: 10
       start_period: 90s
 
+  wiremock:
+    image: wiremock/wiremock:3.5.4-1
+    container_name: wiremock
+    expose:
+      - "8080"
+    ports:
+      - "9090:8080"
+    command: ["--global-response-templating"]
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/__admin/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   payment-service:
     build: ./payment_microservice
     container_name: payment-service
@@ -42,7 +60,10 @@ services:
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - MONGODB_URI=${MONGODB_URI_PAYMENT}
       - JAVA_TOOL_OPTIONS=-Djdk.tls.client.protocols=TLSv1.2
-      - PAYMENT_GATEWAY_BASE_URL=${PAYMENT_GATEWAY_BASE_URL:-http://localhost:9090}
+      - PAYMENT_GATEWAY_BASE_URL=${PAYMENT_GATEWAY_BASE_URL:-http://wiremock:8080}
+    depends_on:
+      wiremock:
+        condition: service_healthy
     networks:
       - office-mb
     healthcheck:

@@ -1,0 +1,17 @@
+{
+  "priority": 5,
+  "request": {
+    "method": "POST",
+    "url": "/api/v1/charges",
+    "bodyPatterns": [
+      { "matchesJsonPath": "$.amount" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"transactionId\": \"txn_{{randomValue type='UUID'}}\", \"status\": \"CAPTURED\", \"message\": \"Payment processed successfully\"}",
+    "transformers": ["response-template"],
+    "fixedDelayMilliseconds": 1500
+  }
+}
