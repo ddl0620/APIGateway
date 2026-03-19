@@ -3,6 +3,7 @@ package com.proj.payment_microservice.infrastructure.gateway;
 import com.proj.payment_microservice.exception.PaymentProcessingException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -22,12 +23,14 @@ public class PaymentGatewayClient {
     private final String refundPath;
 
     public PaymentGatewayClient(
+            ObservationRegistry observationRegistry,
             @Value("${payment.gateway.base-url}") String baseUrl,
             @Value("${payment.gateway.charge-path}") String chargePath,
             @Value("${payment.gateway.refund-path}") String refundPath) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .requestFactory(new org.springframework.http.client.SimpleClientHttpRequestFactory()) // Forces HTTP/1.1
+                .observationRegistry(observationRegistry)
                 .build();
         this.chargePath = chargePath;
         this.refundPath = refundPath;
