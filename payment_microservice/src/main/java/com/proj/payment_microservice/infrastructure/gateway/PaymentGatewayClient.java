@@ -27,6 +27,7 @@ public class PaymentGatewayClient {
             @Value("${payment.gateway.refund-path}") String refundPath) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
+                .requestFactory(new org.springframework.http.client.SimpleClientHttpRequestFactory()) // Forces HTTP/1.1
                 .build();
         this.chargePath = chargePath;
         this.refundPath = refundPath;

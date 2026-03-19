@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.UUID;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 @Slf4j
@@ -38,14 +40,13 @@ public class WireMockConfig {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("""
+                        .withBody(String.format("""
                                 {
-                                    "transactionId": "txn_{{randomValue type='UUID'}}",
+                                    "transactionId": "txn_%s",
                                     "status": "CAPTURED",
                                     "message": "Payment processed successfully"
                                 }
-                                """)
-                        .withTransformers("response-template")
+                                """, UUID.randomUUID()))
                         .withFixedDelay(1500)
                 )
         );
@@ -71,14 +72,13 @@ public class WireMockConfig {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("""
+                        .withBody(String.format("""
                                 {
-                                    "refundId": "ref_{{randomValue type='UUID'}}",
+                                    "refundId": "ref_%s",
                                     "status": "REFUNDED",
                                     "message": "Refund processed successfully"
                                 }
-                                """)
-                        .withTransformers("response-template")
+                                """, UUID.randomUUID()))
                         .withFixedDelay(2000)
                 )
         );
