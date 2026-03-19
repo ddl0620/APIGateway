@@ -1,0 +1,104 @@
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  OFFICE MB — GATEWAY TEST SUITE[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  Gateway:  [1;33mapisix[0m
+  Base URL: [1;33mhttp://localhost:9080[0m
+  Email:    [1;33mtestuser_1773889513@test.com[0m
+
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 1: Gateway Reachability[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m APISIX status endpoint (HTTP 200)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 2: User Registration[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m Register new user (HTTP 201)
+  [1;33mResponse:[0m {"code":201,"message":"User registered successfully","data":{"id":"69bb67e9551f11d9e7ab2f82","email":"testuser_1773889513@test.com","firstName":"Test"
+  [0;32mPASS[0m Reject duplicate email (409) (HTTP 409)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 3: User Login[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m Login with valid credentials (HTTP 200)
+  [0;32mJWT Token:[0m eyJraWQiOiJvZmZpY2UtbWItand0IiwiYWxnIjoiSFMzODQifQ...
+  [0;32mPASS[0m Reject wrong password (401) (HTTP 401)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 4: Protected Endpoints (valid JWT)[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m GET /api/v1/users/profile (HTTP 200)
+  [1;33mProfile:[0m {"code":200,"message":"User profile retrieved","data":{"id":"69bb67e9551f11d9e7ab2f82","email":"testuser_1773889513@test.com","firstName":"Test","last
+  [0;32mPASS[0m POST /api/v1/payments/process (HTTP 201)
+  [1;33mPayment:[0m {"code":201,"message":"Payment processed","data":{"id":"69bb67eb1c88427c18c11fff","userId":"69bb67e9551f11d9e7ab2f82","amount":99.99,"currency":"USD","status":"FAILED","description":"Test payment","ga
+  [0;32mPASS[0m GET /api/v1/payments/history (HTTP 200)
+  [0;32mPASS[0m GET /api/v1/dashboard (aggregation) (HTTP 200)
+  [1;33mDashboard:[0m {"code":200,"message":"Dashboard retrieved","data":{"profile":{"id":"69bb67e9551f11d9e7ab2f82","email":"testuser_1773889513@test.com","firstName":"Test","lastName":"User","role":"CUSTOMER","createdAt"
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 5: Security — Auth Enforcement[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m No JWT → 401 (HTTP 401)
+  [0;32mPASS[0m Invalid JWT → 401 (HTTP 401)
+  [0;32mPASS[0m Tampered JWT → 401 (HTTP 401)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 6: Internal Service Protection[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASS[0m Payment service not reachable from host (Docker network isolation)
+  [0;32mPASS[0m User service not reachable from host (Docker network isolation)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 7: Rate Limiting[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  Sending 20 rapid requests to login endpoint...
+  [0;31mFAIL[0m Rate limit NOT triggered (0/20 got 429)
+
+  Sending 30 rapid requests to protected endpoint...
+  [1;33mWARN[0m Protected rate limit NOT triggered (burst may be high)
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 8: Latency Measurement (10 requests)[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  Measuring response times...
+  Request  1: 190.4 ms
+  Request  2: 114.6 ms
+  Request  3: 121.3 ms
+  Request  4: 171.9 ms
+  Request  5: 127.6 ms
+  Request  6: 103.1 ms
+  Request  7: 186.6 ms
+  Request  8: 116.8 ms
+  Request  9: 345.5 ms
+  Request 10: 135.1 ms
+  [0;36mAverage: 161.3 ms[0m
+  [1;33m(Run with both gateways to compare!)[0m
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST 9: Hot Reload Behavior[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mAPISIX:[0m Routes are updated via Admin API → instant, zero downtime
+  To test: modify a route via curl to Admin API while traffic is flowing.
+  Example:
+    # Change rate limit on-the-fly:
+    curl -X PATCH http://localhost:9180/apisix/admin/routes/2 \
+      -H 'X-API-KEY: admin-api-key-local' \
+      -H 'Content-Type: application/json' \
+      -d '{"plugins":{"limit-req":{"rate":1,"burst":0,"rejected_code":429,"key_type":"var","key":"remote_addr"}}}'
+
+  Then immediately send traffic → new rate limit takes effect instantly.
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m  TEST RESULTS[0m
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  Gateway: [1;33mapisix[0m
+  [0;32mPassed: 14[0m
+  [0;31mFailed: 1[0m
+  Total:  15
+
+  [0;31mSOME TESTS FAILED — check output above[0m
+
+[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+

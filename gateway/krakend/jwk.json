@@ -1,0 +1,10 @@
+{
+  "keys": [
+    {
+      "kty": "oct",
+      "kid": "office-mb-jwt",
+      "k": "c2VjdXJlLXJhbmRvbS1rZXktZm9yLWp3dC1zaWduaW5nLXRoaXMtc2hvdWxkLWJlLWxvbmctZW5vdWdo",
+      "alg": "HS384"
+    }
+  ]
+}

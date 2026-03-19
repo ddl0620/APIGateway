@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: payment_microservice
+  autoconfigure:
+    exclude: org.springframework.boot.mongodb.autoconfigure.health.MongoHealthContributorAutoConfiguration
+  mongodb:
+    uri: ${MONGODB_URI}&serverMonitoringMode=POLL
+  servlet:
+    multipart:
+      max-file-size: 1MB
+      max-request-size: 1MB
+
+server:
+  port: 8082
+  tomcat:
+    max-http-form-post-size: 1MB
+    max-swallow-size: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
+payment:
+  gateway:
+    base-url: ${PAYMENT_GATEWAY_BASE_URL:http://localhost:9090}
+    charge-path: /api/v1/charges
+    refund-path: /api/v1/refunds
+
+wiremock:
+  server:
+    port: 9090
+    enabled: ${WIREMOCK_ENABLED:true}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      paymentGateway:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.net.ConnectException

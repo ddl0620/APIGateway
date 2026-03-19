@@ -1,0 +1,217 @@
+{
+  "$schema": "https://www.krakend.io/schema/krakend.json",
+  "version": 3,
+  "name": "Office MB Gateway",
+  "port": 8888,
+  "timeout": "30s",
+  "cache_ttl": "0s",
+  "extra_config": {
+    "security/cors": {
+      "allow_origins": ["https://your-banking-app.com"],
+      "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allow_headers": ["Content-Type", "Authorization"],
+      "allow_credentials": true,
+      "max_age": "3600s"
+    },
+    "router": {
+      "return_error_msg": true
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/api/v1/auth/register",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 5,
+          "client_max_rate": 2,
+          "strategy": "ip"
+        }
+      },
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/auth/register",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/auth/login",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 10,
+          "client_max_rate": 3,
+          "strategy": "ip"
+        }
+      },
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/auth/login",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/auth/refresh-token",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 10,
+          "client_max_rate": 3,
+          "strategy": "ip"
+        }
+      },
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/auth/refresh-token",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/auth/logout",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true,
+          "operation_debug": false
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 10,
+          "client_max_rate": 5,
+          "strategy": "ip"
+        }
+      },
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/auth/logout",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users/profile",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true,
+          "operation_debug": false
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 20,
+          "client_max_rate": 5,
+          "strategy": "ip"
+        }
+      },
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/users/profile",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/payments/process",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true,
+          "operation_debug": false
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 10,
+          "client_max_rate": 3,
+          "strategy": "ip"
+        }
+      },
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/payments/process",
+          "method": "POST",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/payments/history",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true,
+          "operation_debug": false
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 20,
+          "client_max_rate": 5,
+          "strategy": "ip"
+        }
+      },
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/payments/history",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    },
+    {
+      "endpoint": "/api/v1/dashboard",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "extra_config": {
+        "auth/validator": {
+          "alg": "HS256",
+          "jwk_local_path": "./jwk.json",
+          "disable_jwk_security": true,
+          "operation_debug": false
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 20,
+          "client_max_rate": 5,
+          "strategy": "ip"
+        }
+      },
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "host": ["http://orchestrator.office-mb.svc.cluster.local"],
+          "url_pattern": "/api/v1/dashboard",
+          "method": "GET",
+          "encoding": "no-op"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# APISIX configuration for Docker Compose
+apisix:
+  node_listen: 9080
+  enable_admin: true
+  admin_listen:
+    ip: 0.0.0.0
+    port: 9180
+
+deployment:
+  admin:
+    admin_key:
+      - name: admin
+        key: admin-api-key-local
+        role: admin
+    allow_admin:
+      - 0.0.0.0/0
+
+  etcd:
+    host:
+      - "http://etcd:2379"
+
+plugins:
+  - limit-req
+  - limit-conn
+  - limit-count
+  - cors
+  - prometheus
+  - http-logger
+  - ip-restriction
+
+plugin_attr:
+  prometheus:
+    export_addr:
+      ip: 0.0.0.0
+      port: 9091

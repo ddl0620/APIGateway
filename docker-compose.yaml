@@ -1,0 +1,148 @@
+# ============================================================
+# Office MB — Full stack with API Gateway comparison
+#
+# System A (APISIX):  docker compose --profile apisix up --build
+# System B (KrakenD): docker compose --profile krakend up --build
+# No gateway:         docker compose up --build
+#
+# Secrets are loaded from .env file (see .env.example)
+# ============================================================
+
+services:
+  # ================================================================
+  # Core Microservices (always run)
+  # ================================================================
+
+  user-service:
+    build: ./user_microservice
+    container_name: user-service
+    expose:
+      - "8081"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - MONGODB_URI=${MONGODB_URI_USER}
+      - JAVA_TOOL_OPTIONS=-Djdk.tls.client.protocols=TLSv1.2
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  payment-service:
+    build: ./payment_microservice
+    container_name: payment-service
+    expose:
+      - "8082"
+    environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - MONGODB_URI=${MONGODB_URI_PAYMENT}
+      - JAVA_TOOL_OPTIONS=-Djdk.tls.client.protocols=TLSv1.2
+      - PAYMENT_GATEWAY_BASE_URL=${PAYMENT_GATEWAY_BASE_URL:-http://localhost:9090}
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  orchestrator:
+    build: ./orchestrator
+    container_name: orchestrator
+    expose:
+      - "8080"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - SERVICES_USER_BASE_URL=http://user-service:8081
+      - SERVICES_PAYMENT_BASE_URL=http://payment-service:8082
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    depends_on:
+      user-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # ================================================================
+  # System A — APISIX (profile: apisix)
+  # Gateway exposed on :9080
+  # Admin API on :9180
+  # ================================================================
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: etcd
+    profiles: ["apisix"]
+    environment:
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ALLOW_NONE_AUTHENTICATION=yes
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  apisix:
+    image: apache/apisix:3.9.1-debian
+    container_name: apisix
+    profiles: ["apisix"]
+    ports:
+      - "9080:9080"     # Gateway entry point
+      - "9180:9180"     # Admin API
+    volumes:
+      - ./gateway/apisix/apisix-config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      orchestrator:
+        condition: service_healthy
+    networks:
+      - office-mb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -H 'X-API-KEY: admin-api-key-local' http://localhost:9180/apisix/admin/routes || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ================================================================
+  # System B — KrakenD (profile: krakend)
+  # Gateway exposed on :8888
+  # ================================================================
+
+  krakend:
+    image: devopsfaith/krakend:2.7
+    container_name: krakend
+    profiles: ["krakend"]
+    ports:
+      - "8888:8888"     # Gateway entry point
+    volumes:
+      - ./gateway/krakend/krakend.json:/etc/krakend/krakend.json:ro
+      - ./gateway/krakend/jwk.json:/etc/krakend/jwk.json:ro
+    command: ["run", "-c", "/etc/krakend/krakend.json", "-d"]
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    networks:
+      - office-mb
+
+networks:
+  office-mb:
+    driver: bridge

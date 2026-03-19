@@ -1,0 +1,29 @@
+# Environment secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+# K8s secrets (if local unencrypted versions exist)
+**/secrets.yaml
+*secret*.yaml
+*secret*.json
+
+# Java build output
+**/target/
+**/*.jar
+**/*.class
+
+# IDE files
+**/.idea/
+**/*.iml
+**/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+**/*.log

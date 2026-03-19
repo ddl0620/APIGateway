@@ -1,0 +1,81 @@
+# ============================================================
+# NetworkPolicies — restrict pod-to-pod communication
+# Only allow traffic along approved paths
+# ============================================================
+
+# User service: only accepts traffic from orchestrator
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: user-service-policy
+  namespace: office-mb
+spec:
+  podSelector:
+    matchLabels:
+      app: user-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: orchestrator
+      ports:
+        - port: 8081
+          protocol: TCP
+---
+# Payment service: only accepts traffic from orchestrator
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: payment-service-policy
+  namespace: office-mb
+spec:
+  podSelector:
+    matchLabels:
+      app: payment-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: orchestrator
+      ports:
+        - port: 8082
+          protocol: TCP
+---
+# Orchestrator: only accepts traffic from gateway pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: orchestrator-policy
+  namespace: office-mb
+spec:
+  podSelector:
+    matchLabels:
+      app: orchestrator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: krakend
+        - podSelector:
+            matchLabels:
+              app: apisix
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+# Default deny all ingress in namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: office-mb
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
